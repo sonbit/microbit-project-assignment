@@ -1,0 +1,24 @@
+// To get started, press Ctrl+Space to bring up the completion menu and view the available nodes.
+
+// You can also use the buttons in the sidebar to perform actions on nodes.
+// Actions currently available include:
+
+// * Enabling / disabling the node
+// * Adding the bus to a bus
+// * Removing the node
+// * Connecting ADC channels
+
+// For more help, browse thfe DeviceTree documentation at https://docs.zephyrproject.org/latest/guides/dts/index.html
+// You can also visit the nRF DeviceTree extension documentation at https://nrfconnect.github.io/vscode-nrf-connect/devicetree/nrfdevicetree.html
+/ {
+	zephyr,user {
+		/* period cell corresponds to initial period */
+		pwms = <&sw_pwm 0 PWM_USEC(1500) PWM_POLARITY_NORMAL>;
+	};
+};
+
+//SPEAKER
+&sw_pwm {
+    status = "okay";
+    channel-gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+};
