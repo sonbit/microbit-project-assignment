@@ -29,7 +29,7 @@ void timer_setup(timer_callback_t tmr_callback)
     uint32_t base_frequency = NRF_TIMER_BASE_FREQUENCY_GET(timer_inst.p_reg);
     nrfx_timer_config_t config = NRFX_TIMER_DEFAULT_CONFIG(base_frequency);
     config.bit_width = NRF_TIMER_BIT_WIDTH_32;
-    config.p_context = "CONTEXT";
+    config.p_context = "A Context";
 
     timer_callback = tmr_callback;
     nrfx_err_t status = nrfx_timer_init(&timer_inst, &config, timer_handler);

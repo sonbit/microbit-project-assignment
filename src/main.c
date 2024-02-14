@@ -6,12 +6,13 @@
 #include "drivers/speaker.h"
 #include "timer.h"
 
-#define STACKSIZE 4096
+#define STACKSIZE 1024
 #define BUTTON_TASK_PRIORITY -1
 #define DISPLAY_TASK_PRIORITY 2
 #define METRONOME_TASK_PRIORITY 1
 
-#define BTN_TASK_DELAY K_MSEC(300)
+#define SOUND_DURATION 25
+#define BTN_TASK_DELAY K_MSEC(150)
 #define TASK_DELAY 200
 
 K_SEM_DEFINE(btn_A_sem, 0, 1);
@@ -45,7 +46,7 @@ void button_A_task(void)
     while (1)
     {
         k_sem_take(&btn_A_sem, K_FOREVER);
-        speaker_play_high_note(25);
+        speaker_play_high_note(SOUND_DURATION);
         k_sleep(BTN_TASK_DELAY);
     }
 }
@@ -55,7 +56,7 @@ void button_B_task(void)
     while (1)
     {
         k_sem_take(&btn_B_sem, K_FOREVER);
-        speaker_play_low_note(25);
+        speaker_play_low_note(SOUND_DURATION);
         k_sleep(BTN_TASK_DELAY);
     }
 }
@@ -85,8 +86,8 @@ void metronome_task(void)
     while (1)
     {
         printk("METRONOME TASK\n");
-        speaker_play_default_note(25);
-        k_sleep(K_MSEC(TASK_DELAY - 25));
+        speaker_play_default_note(SOUND_DURATION);
+        k_sleep(K_MSEC(TASK_DELAY - SOUND_DURATION));
     }
 }
 

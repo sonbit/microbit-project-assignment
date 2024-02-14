@@ -5,10 +5,9 @@
 #include "speaker.h"
 
 #define HIGH_PERIOD 4500000
-#define LOW_PERIOD 1495000
+#define LOW_PERIOD 2000000
 
 static const struct pwm_dt_spec speaker = PWM_DT_SPEC_GET(DT_PATH(zephyr_user));
-int first = 0;
 
 void speaker_play(int period, int duration)
 {
