@@ -1,57 +1,96 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
-#include <zephyr/drivers/display.h>
-#include <zephyr/drivers/gpio.h>
 
 #include "drivers/button.h"
 #include "drivers/led.h"
 #include "drivers/speaker.h"
+#include "timer.h"
 
-#define STACKSIZE 1024
-#define DISPLAY_TASK_PRIORITY -1
+#define STACKSIZE 4096
+#define BUTTON_TASK_PRIORITY -1
+#define DISPLAY_TASK_PRIORITY 2
 #define METRONOME_TASK_PRIORITY 1
 
+#define BTN_TASK_DELAY K_MSEC(300)
+#define TASK_DELAY 200
+#define MET_TASK_DELAY K_MSEC(TASK_DELAY)
+#define DISP_TASK_DELAY K_MSEC(TASK_DELAY / 4)
+
 // Semaphore to ensure setup has completed before starting thread
-K_SEM_DEFINE(startup_sem, 0, 1);
+K_SEM_DEFINE(btn_A_sem, 0, 1);
+K_SEM_DEFINE(btn_B_sem, 0, 1);
+K_SEM_DEFINE(disp_sem, 0, 1);
+K_SEM_DEFINE(met_sem, 0, 1);
 
-int metronome_counter = 500;
+int counter = 500;
 
-void btn_A_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+void btn_A_pressed(void)
 {
-    metronome_counter += 10;
+    counter += 10;
+    k_sem_give(&btn_A_sem);
 }
 
-void btn_B_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+void btn_B_pressed(void)
 {
-    metronome_counter -= 10;
+    counter -= 10;
+    k_sem_give(&btn_B_sem);
 }
 
-void led_display_thread(void)
+void timer_interrupt()
 {
-    k_sem_take(&startup_sem, K_FOREVER);
+    printk("Timer Interrupt\n");
+    k_sem_give(&disp_sem);
+    k_sem_give(&met_sem);
+}
 
+void button_A_task(void)
+{
     while (1)
     {
-        led_display(metronome_counter, metronome_counter >> 1, metronome_counter >> 2, metronome_counter >> 3, metronome_counter >> 4);
-        k_sleep(K_MSEC(metronome_counter / 2));
+        k_sem_take(&btn_A_sem, K_FOREVER);
+        speaker_play_high_note(25);
+        k_sleep(BTN_TASK_DELAY);
+    }
+}
+
+void button_B_task(void)
+{
+    while (1)
+    {
+        k_sem_take(&btn_B_sem, K_FOREVER);
+        speaker_play_low_note(25);
+        k_sleep(BTN_TASK_DELAY);
+    }
+}
+
+void display_task(void)
+{
+    while (1)
+    {
+        k_sem_take(&disp_sem, K_FOREVER);
+        printk("DISPLAY TASK\n");
+        led_display(counter, counter >> 1, counter >> 2, counter >> 3, counter >> 4);
+        k_sleep(DISP_TASK_DELAY);
         led_display(0, 0, 0, 0, 0);
-        k_sleep(K_MSEC(metronome_counter / 2));
+        k_sleep(DISP_TASK_DELAY);
     }
 }
 
 void metronome_task(void)
 {
-    k_sem_take(&startup_sem, K_FOREVER);
-
     while (1)
     {
-        // speaker_play();
-        k_sleep(K_MSEC(metronome_counter - DURATION_MSEC));
+        k_sem_take(&met_sem, K_FOREVER);
+        printk("METRONOME TASK\n");
+        // speaker_play_default_note(25);
+        k_sleep(K_MSEC(TASK_DELAY - DURATION_MSEC));
     }
 }
 
-K_THREAD_DEFINE(thread0_id, STACKSIZE, led_display_thread, NULL, NULL, NULL, DISPLAY_TASK_PRIORITY, 0, 0);
-K_THREAD_DEFINE(thread1_id, STACKSIZE, metronome_task, NULL, NULL, NULL, METRONOME_TASK_PRIORITY, 0, 0);
+K_THREAD_DEFINE(thread0_id, STACKSIZE, button_A_task, NULL, NULL, NULL, BUTTON_TASK_PRIORITY, 0, 0);
+K_THREAD_DEFINE(thread1_id, STACKSIZE, button_B_task, NULL, NULL, NULL, BUTTON_TASK_PRIORITY, 0, 0);
+K_THREAD_DEFINE(thread2_id, STACKSIZE, display_task, NULL, NULL, NULL, DISPLAY_TASK_PRIORITY, 0, 0);
+K_THREAD_DEFINE(thread3_id, STACKSIZE, metronome_task, NULL, NULL, NULL, METRONOME_TASK_PRIORITY, 0, 0);
 
 int main(void)
 {
@@ -69,12 +108,12 @@ int main(void)
         return -1;
     }
 
+    timer_setup(timer_interrupt);
+
     printk("Setup Completed Successfully\n");
-    k_sem_give(&startup_sem);
-    k_sem_give(&startup_sem);
 
     while (1)
     {
-        k_sleep(K_MSEC(1));
+        k_sleep(K_MSEC(100));
     }
 }

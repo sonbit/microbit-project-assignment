@@ -1,4 +1,5 @@
 #include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
 
 #include "button.h"
 
@@ -6,16 +7,28 @@
 #define BTN_B_PIN 3
 
 static const struct device *gpio0;
-
-// Button IO
 static const struct gpio_dt_spec btn_A = GPIO_DT_SPEC_GET(DT_NODELABEL(buttona), gpios);
 static const struct gpio_dt_spec btn_B = GPIO_DT_SPEC_GET(DT_NODELABEL(buttonb), gpios);
-
-// Button callback
 static struct gpio_callback btn_A_cb;
 static struct gpio_callback btn_B_cb;
+static button_A_pressed_callback_t btn_A_pressed_callback = NULL;
+static button_A_pressed_callback_t btn_B_pressed_callback = NULL;
 
-int button_setup(btn_pressed btn_A_pressed, btn_pressed btn_B_pressed)
+void button_A_pressed_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    gpio_pin_toggle(gpio0, BTN_A_PIN);
+    if (btn_A_pressed_callback != NULL)
+        btn_A_pressed_callback();
+}
+
+void button_B_pressed_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    gpio_pin_toggle(gpio0, BTN_B_PIN);
+    if (btn_B_pressed_callback != NULL)
+        btn_B_pressed_callback();
+}
+
+int button_setup(button_A_pressed_callback_t btn_A_pressed_cb, button_B_pressed_callback_t btn_B_pressed_cb)
 {
     gpio0 = DEVICE_DT_GET(DT_NODELABEL(gpio0));
     if (!gpio0)
@@ -35,8 +48,11 @@ int button_setup(btn_pressed btn_A_pressed, btn_pressed btn_B_pressed)
     if (ret < 0)
         return ret;
 
-    gpio_init_callback(&btn_A_cb, btn_A_pressed, BIT(btn_A.pin));
-    gpio_init_callback(&btn_B_cb, btn_B_pressed, BIT(btn_B.pin));
+    btn_A_pressed_callback = btn_A_pressed_cb;
+    btn_B_pressed_callback = btn_B_pressed_cb;
+
+    gpio_init_callback(&btn_A_cb, button_A_pressed_callback, BIT(btn_A.pin));
+    gpio_init_callback(&btn_B_cb, button_B_pressed_callback, BIT(btn_B.pin));
     gpio_add_callback(btn_A.port, &btn_A_cb);
     gpio_add_callback(btn_B.port, &btn_B_cb);
 

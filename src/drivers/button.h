@@ -2,8 +2,7 @@
 
 #include <zephyr/drivers/gpio.h>
 
-// Button pressed function signature
-typedef void (*btn_pressed)(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
+typedef void (*button_A_pressed_callback_t)(void);
+typedef void (*button_B_pressed_callback_t)(void);
 
-// Button setup with gpio and callbacks
-int button_setup(btn_pressed btn_A_pressed, btn_pressed btn_B_pressed);
+int button_setup(button_A_pressed_callback_t btn_A_pressed_cb, button_B_pressed_callback_t btn_B_pressed_cb);
