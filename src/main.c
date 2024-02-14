@@ -16,7 +16,6 @@
 #define MET_TASK_DELAY K_MSEC(TASK_DELAY)
 #define DISP_TASK_DELAY K_MSEC(TASK_DELAY / 4)
 
-// Semaphore to ensure setup has completed before starting thread
 K_SEM_DEFINE(btn_A_sem, 0, 1);
 K_SEM_DEFINE(btn_B_sem, 0, 1);
 K_SEM_DEFINE(disp_sem, 0, 1);
