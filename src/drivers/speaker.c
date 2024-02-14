@@ -4,7 +4,6 @@
 
 #include "speaker.h"
 
-#define DURATION K_MSEC(DURATION_MSEC)
 #define HIGH_PERIOD 4500000
 #define LOW_PERIOD 1495000
 

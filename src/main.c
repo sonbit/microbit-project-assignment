@@ -13,8 +13,6 @@
 
 #define BTN_TASK_DELAY K_MSEC(300)
 #define TASK_DELAY 200
-#define MET_TASK_DELAY K_MSEC(TASK_DELAY)
-#define DISP_TASK_DELAY K_MSEC(TASK_DELAY / 4)
 
 K_SEM_DEFINE(btn_A_sem, 0, 1);
 K_SEM_DEFINE(btn_B_sem, 0, 1);
@@ -64,25 +62,31 @@ void button_B_task(void)
 
 void display_task(void)
 {
+    // Adding semaphore take to while loop causes issues
+    // But now the timer only starts but does not ensure tempo
+    k_sem_take(&disp_sem, K_FOREVER);
+
     while (1)
     {
-        k_sem_take(&disp_sem, K_FOREVER);
         printk("DISPLAY TASK\n");
         led_display(counter, counter >> 1, counter >> 2, counter >> 3, counter >> 4);
-        k_sleep(DISP_TASK_DELAY);
+        k_sleep(K_MSEC(TASK_DELAY * 0.25));
         led_display(0, 0, 0, 0, 0);
-        k_sleep(DISP_TASK_DELAY);
+        k_sleep(K_MSEC(TASK_DELAY * 0.75));
     }
 }
 
 void metronome_task(void)
 {
+    // Adding semaphore take to while loop causes issues
+    // But now the timer only starts but does not ensure tempo
+    k_sem_take(&met_sem, K_FOREVER);
+
     while (1)
     {
-        k_sem_take(&met_sem, K_FOREVER);
         printk("METRONOME TASK\n");
-        // speaker_play_default_note(25);
-        k_sleep(K_MSEC(TASK_DELAY - DURATION_MSEC));
+        speaker_play_default_note(25);
+        k_sleep(K_MSEC(TASK_DELAY - 25));
     }
 }
 
